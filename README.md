@@ -28,7 +28,7 @@ npm run build
 1. Installe une extension d'export cookies avec support HTTP-only :
    - Chrome : [Get cookies.txt LOCALLY](https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)
 2. Va sur youtube.com, connecté à ton compte
-3. Exporte les cookies dans un fichier (ex: `cookies.txt`)
+3. Exporte les cookies → `~/Downloads/cookies.txt`
 
 > ⚠️ **Important :** Le cookie `LOGIN_INFO` doit être présent. Sans lui, YouTube refuse l'authentification.
 > ⚠️ Les cookies sont rotés par YouTube si l'IP change — exécute le script depuis la même IP que le navigateur.
@@ -36,15 +36,22 @@ npm run build
 ## Utilisation
 
 ```bash
-# Transcription d'une vidéo unique (cookies dans ./cookies.txt par défaut)
-python3 cron_youtube_to_facebook.py --fetch-transcript dQw4w9WgXcQ --cookies ./cookies.txt
+# 1. Clone
+git clone https://github.com/A-Verderosa/youtube-transcript-pipeline.git /Users/wafer/Hermes_youtube
+cd /Users/wafer/Hermes_youtube
 
-# Avec Node.js personnalisé
-python3 cron_youtube_to_facebook.py --fetch-transcript dQw4w9WgXcQ --cookies ./cookies.txt --node-path /usr/local/bin/node
+# 2. Copie les cookies (optionnel, sinon utilise --cookies)
+cp ~/Downloads/cookies.txt ./cookies.txt
 
-# Traitement par lot depuis Notion
+# 3. Test : transcrit Rick Astley
+python3 cron_youtube_to_facebook.py --fetch-transcript dQw4w9WgXcQ
+
+# 4. Avec Node.js personnalisé
+python3 cron_youtube_to_facebook.py --fetch-transcript dQw4w9WgXcQ --node-path /usr/local/bin/node
+
+# 5. Batch Notion complet
 export NOTION_API_KEY="nttn_..."
-python3 cron_youtube_to_facebook.py --cookies ./cookies.txt
+python3 cron_youtube_to_facebook.py
 ```
 
 ## Structure
