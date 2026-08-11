@@ -119,9 +119,9 @@ def fetch_youtube_transcript(video_id: str) -> tuple[str | None, str | None]:
     import urllib.request
     import http.cookiejar as _cj
 
-    COOKIES_FILE = os.path.expanduser(
-        "/data/skills/media/youtube-session/references/cookies.txt")
-    NODE_PATH = "/usr/local/bin/node"
+    COOKIES_FILE = globals().get("COOKIES_FILE", os.path.expanduser(
+        "/data/skills/media/youtube-session/references/cookies.txt"))
+    NODE_PATH = globals().get("NODE_PATH", "/usr/local/bin/node")
 
     # Use a temporary copy to avoid yt-dlp overwriting the source file
     TEMP_COOKIES = f"/tmp/yt_cookies_{video_id}_{os.getpid()}.txt"
@@ -286,6 +286,7 @@ def get_today_filter():
 
 def main():
     import argparse
+    global COOKIES_FILE, NODE_PATH
     
     parser = argparse.ArgumentParser(description="YouTube → Notion Facebook posts pipeline")
     parser.add_argument("--write-summary", nargs=3, metavar=("PAGE_ID", "SUMMARY", "TITLE"),
@@ -300,7 +301,15 @@ def main():
                         help="Create a child page with transcript: parent_page_id transcript_text language video_title")
     parser.add_argument("--max-videos", type=int, default=5,
                         help="Max videos to process per run (default: 5)")
+    parser.add_argument("--cookies", default="./cookies.txt",
+                        help="Path to Netscape-format cookies file (default: ./cookies.txt)")
+    parser.add_argument("--node-path", default="node",
+                        help="Path to Node.js binary (default: node, uses PATH)")
     args = parser.parse_args()
+
+    # Override global paths
+    COOKIES_FILE = os.path.expanduser(args.cookies)
+    NODE_PATH = args.node_path
 
     # ── Fetch transcript mode ──────────────────────────────────────────
     if args.fetch_transcript:
