@@ -245,7 +245,15 @@ def fetch_youtube_transcript(video_id: str) -> tuple[str | None, str | None]:
         pass
 
     _cleanup()
-    return (None, "Authentication required — YouTube blocks this video from cloud IP. Try re-exporting fresh cookies.")
+
+    # Detect missing yt-dlp for a clearer error
+    try:
+        subprocess.run(["python3", "-m", "yt_dlp", "--version"],
+                       capture_output=True, timeout=5, check=True)
+    except (subprocess.SubprocessError, FileNotFoundError):
+        return (None, "yt-dlp is not installed. Run: pip install yt-dlp")
+
+    return (None, "Authentication required — YouTube returned LOGIN_REQUIRED. Try re-exporting fresh cookies.")
 
 
 def extract_video_id(url: str) -> str:
