@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.wafer.youtube-transcript-pipeline</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/wafer/Hermes_youtube/venv/bin/python3</string>
+        <string>/Users/wafer/Hermes_youtube/cron_youtube_to_facebook.py</string>
+        <string>--process-today</string>
+        <string>--max-videos</string>
+        <string>5</string>
+        <string>--cookies</string>
+        <string>/Users/wafer/Hermes_youtube/cookies.txt</string>
+        <string>--node-path</string>
+        <string>/Users/wafer/.local/bin/node</string>
+        <string>--obsidian-vault</string>
+        <string>/Users/wafer/Obsidian/VotreVault</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>NOTION_API_KEY</key>
+        <string>ntn_votre_clé_ici</string>
+        <key>PATH</key>
+        <string>/Users/wafer/.local/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/wafer/Hermes_youtube/logs/cron.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/wafer/Hermes_youtube/logs/cron-error.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+    <key>KeepAlive</key>
+    <false/>
+</dict>
+</plist>

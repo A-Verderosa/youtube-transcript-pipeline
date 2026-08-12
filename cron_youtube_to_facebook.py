@@ -108,6 +108,52 @@ def notion_insert_body(page_id: str, markdown: str) -> bool:
         return False
 
 
+def write_obsidian_note(vault_path: str, video_id: str, title: str,
+                         channel: str, url: str, transcript: str,
+                         language: str) -> str | None:
+    """Write a YouTube transcript as a Markdown note in the Obsidian vault.
+    Returns the file path written, or None on error."""
+    import html as _html
+    safe_title = re.sub(r'[\\/:*?"<>|]', '_', title)[:80]
+    folder = os.path.join(vault_path, "YouTube Transcripts")
+    os.makedirs(folder, exist_ok=True)
+    filepath = os.path.join(folder, f"{safe_title}.md")
+    date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    transcript_snippet = transcript[:100000] if len(transcript) > 100000 else transcript
+
+    content = f"""---
+created: {date_str}
+source: YouTube
+video_id: {video_id}
+language: {language}
+channel: {_html.escape(channel, quote=True)}
+url: {url}
+---
+
+# 🎬 {title}
+
+📺 **Chaîne :** {channel}
+🔗 **Lien :** [{url}]({url})
+🌐 **Langue :** {language}
+📅 **Récupéré le :** {date_str}
+
+---
+
+## 📝 Transcription
+
+{transcript_snippet}
+"""
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(content)
+        print(f"[OBSIDIAN] Written to {filepath}", file=sys.stderr)
+        return filepath
+    except OSError as e:
+        print(f"[ERROR] Obsidian write failed: {e}", file=sys.stderr)
+        return None
+
+
 def fetch_youtube_transcript(video_id: str) -> tuple[str | None, str | None]:
     """Download YouTube subtitles via yt-dlp with cookies + Node.js POT.
     Returns (transcript_text, language) or (None, error)."""
@@ -313,6 +359,10 @@ def main():
                         help="Path to Netscape-format cookies file (default: ./cookies.txt)")
     parser.add_argument("--node-path", default="node",
                         help="Path to Node.js binary (default: node, uses PATH)")
+    parser.add_argument("--obsidian-vault",
+                        help="Path to Obsidian vault to also write transcripts (e.g. /Users/wafer/Obsidian/MyVault)")
+    parser.add_argument("--process-today", action="store_true",
+                        help="Full pipeline: query Notion → fetch transcripts → write Notion body → write Obsidian")
     args = parser.parse_args()
 
     # Override global paths
@@ -409,6 +459,119 @@ def main():
             print(json.dumps({"success": True, "page_id": page_id, "title": video_title}))
         else:
             print(json.dumps({"success": False, "page_id": page_id, "title": video_title}))
+        return
+
+    # ── Process Today: full automatic pipeline ──────────────────────────
+    if args.process_today:
+        print("[INFO] Process-today mode: querying Notion...", file=sys.stderr)
+        payload = {
+            "filter": get_today_filter(),
+            "sorts": [{"property": "Date de création", "direction": "descending"}],
+            "page_size": 50,
+        }
+        result = notion_query(payload)
+        if "error" in result:
+            print(json.dumps({"error": result["error"], "processed": 0}))
+            sys.exit(1)
+
+        pages = result.get("results", [])
+        print(f"[INFO] Found {len(pages)} pages created today", file=sys.stderr)
+
+        vault = os.path.expanduser(args.obsidian_vault) if args.obsidian_vault else None
+        processed = 0
+        results = []
+
+        for page in pages:
+            if processed >= args.max_videos:
+                break
+            pid = page["id"]
+            props = page.get("properties", {})
+
+            # Skip if already processed
+            resume_ia = props.get("Résumé IA", {}).get("rich_text", [])
+            if resume_ia and resume_ia[0].get("text", {}).get("content", "").strip():
+                print(f"[SKIP] {pid[:8]}... already processed", file=sys.stderr)
+                continue
+
+            url_source = props.get("URL source", {}).get("url", "")
+            if not url_source:
+                continue
+
+            video_id = extract_video_id(url_source)
+            if not video_id:
+                continue
+
+            notion_title = ""
+            title_field = props.get("Titre", {}).get("title", [])
+            if title_field:
+                notion_title = title_field[0].get("text", {}).get("content", "")
+
+            channel = ""
+            channel_field = props.get("Canal source", {}).get("rich_text", [])
+            if channel_field:
+                channel = channel_field[0].get("text", {}).get("content", "")
+
+            meta = fetch_oembed(video_id)
+            youtube_title = meta.get("title", notion_title)
+            youtube_channel = meta.get("author_name", channel)
+            thumbnail = meta.get("thumbnail_url", "")
+
+            print(f"[INFO] #{processed+1}: {youtube_title[:60]}... ({youtube_channel})", file=sys.stderr)
+
+            # Fetch transcript
+            transcript, lang_or_error = fetch_youtube_transcript(video_id)
+
+            if transcript:
+                # Write to Notion body
+                md = f"""## 🎬 {youtube_title}
+
+📺 **Chaîne :** {youtube_channel}
+
+🔗 **Lien :** {url_source}
+
+🖼️ ![Miniature]({thumbnail})
+
+---
+
+## 📝 Transcription ({lang_or_error})
+
+{transcript[:50000]}
+"""
+                notion_ok = notion_insert_body(pid, md)
+                if notion_ok:
+                    print(f"[NOTION] ✅ Transcript written to page {pid[:8]}", file=sys.stderr)
+
+                # Write to Obsidian vault
+                if vault:
+                    write_obsidian_note(vault, video_id, youtube_title,
+                                        youtube_channel, url_source,
+                                        transcript, lang_or_error)
+            else:
+                # Write error placeholder to Notion
+                md = f"""## 🎬 {youtube_title}
+
+📺 **Chaîne :** {youtube_channel}
+
+🔗 **Lien :** {url_source}
+
+---
+
+❌ **Transcription indisponible :** {lang_or_error}
+"""
+                notion_insert_body(pid, md)
+                print(f"[NOTION] ⚠️ Error placeholder written for {pid[:8]}: {lang_or_error}", file=sys.stderr)
+
+            processed += 1
+            results.append({
+                "page_id": pid,
+                "video_id": video_id,
+                "title": youtube_title,
+                "transcript_ok": transcript is not None,
+                "language": lang_or_error,
+            })
+
+        print(json.dumps({"date": str(datetime.now(timezone.utc)), "processed": processed, "results": results},
+                         ensure_ascii=False, indent=2))
         return
 
     # ── Collect mode ────────────────────────────────────────────────────
