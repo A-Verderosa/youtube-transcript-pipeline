@@ -18,7 +18,7 @@
         <string>--node-path</string>
         <string>/Users/wafer/.local/bin/node</string>
         <string>--obsidian-vault</string>
-        <string>/Users/wafer/Obsidian/VotreVault</string>
+        <string>/Users/wafer/Documents/Obsidian/AVR2</string>
     </array>
 
     <key>EnvironmentVariables</key>

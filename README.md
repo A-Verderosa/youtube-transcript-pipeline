@@ -214,7 +214,22 @@ Les transcriptions sont écrites dans :
     └── ...
 ```
 
-Chaque note contient : métadonnées YAML (date, vidéo ID, langue, chaîne, URL) + transcription complète.
+Ces notes sont automatiquement liées entre elles :
+
+- `[[Chaîne YouTube]]` — chaque vidéo crée un wikilink vers sa chaîne
+- `#youtube/transcript` — tag pour retrouver toutes les transcriptions
+- `#youtube/en` / `#youtube/fr` — tags par langue
+- `YouTube Transcripts.md` — **MOC** (Map of Content) indexant toutes les vidéos
+
+Dans **Graph View** d'Obsidian, ça donne :
+
+```
+[Chaîne A] ←──→ [Vidéo 1] ←──→ [YouTube Transcripts]
+[Chaîne A] ←──→ [Vidéo 2] ←──→ [YouTube Transcripts]
+[Chaîne B] ←──→ [Vidéo 3] ←──→ [YouTube Transcripts]
+```
+
+Chaque note contient aussi des `aliases` dans le frontmatter pour la retrouver par le nom de la vidéo.
 
 ---
 

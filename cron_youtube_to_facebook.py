@@ -120,38 +120,94 @@ def write_obsidian_note(vault_path: str, video_id: str, title: str,
     filepath = os.path.join(folder, f"{safe_title}.md")
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    transcript_snippet = transcript[:100000] if len(transcript) > 100000 else transcript
+    transcript_snippet = transcript[:50000] if len(transcript) > 50000 else transcript
+    safe_channel = re.sub(r'[\[\]]', '', channel)[:60]  # clean for wikilink
+
+    # Sanitize title for frontmatter (no colons or brackets)
+    fm_title = title.replace('"', "'").replace(':', ' -')[:100]
 
     content = f"""---
+title: "{fm_title}"
 created: {date_str}
 source: YouTube
 video_id: {video_id}
 language: {language}
-channel: {_html.escape(channel, quote=True)}
-url: {url}
+channel: "{channel}"
+url: "{url}"
+tags:
+  - youtube/transcript
+  - youtube/{language}
+aliases:
+  - "{fm_title}"
 ---
 
 # 🎬 {title}
 
-📺 **Chaîne :** {channel}
+📺 **Chaîne :** [[{safe_channel}]]
 🔗 **Lien :** [{url}]({url})
-🌐 **Langue :** {language}
+🌐 **Langue :** `{language}`
 📅 **Récupéré le :** {date_str}
 
 ---
 
-## 📝 Transcription
+## 📝 Transcription ({len(transcript_snippet)} caractères)
 
 {transcript_snippet}
+
+---
+
+*Source : [{url}]({url}) — [[{safe_channel}]]*
 """
     try:
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
         print(f"[OBSIDIAN] Written to {filepath}", file=sys.stderr)
+
+        # Update or create the MOC index
+        index_path = os.path.join(folder, "YouTube Transcripts.md")
+        _update_obsidian_index(index_path, safe_title, safe_channel, date_str)
+
         return filepath
     except OSError as e:
         print(f"[ERROR] Obsidian write failed: {e}", file=sys.stderr)
         return None
+
+
+def _update_obsidian_index(index_path: str, title: str, channel: str, date_str: str):
+    """Append a new entry to the YouTube Transcripts index MOC."""
+    entry = f"- [[{title}]] — [[{channel}]]  ·  {date_str}\n"
+    try:
+        if os.path.exists(index_path):
+            with open(index_path, "r+", encoding="utf-8") as f:
+                content = f.read()
+                # Insert before the last --- or at end
+                if content.rstrip().endswith("---"):
+                    content = content.rstrip()[:-3] + entry + "\n---\n"
+                else:
+                    content += entry
+                f.seek(0)
+                f.write(content)
+                f.truncate()
+        else:
+            with open(index_path, "w", encoding="utf-8") as f:
+                f.write(f"""---
+title: YouTube Transcripts
+created: {date_str}
+tags:
+  - moc
+  - youtube
+---
+
+# 📼 YouTube Transcripts
+
+Index de toutes les transcriptions YouTube importées.
+
+{entry}
+---
+""")
+        print(f"[OBSIDIAN] Index updated: {index_path}", file=sys.stderr)
+    except OSError as e:
+        print(f"[OBSIDIAN] Index update failed: {e}", file=sys.stderr)
 
 
 def fetch_youtube_transcript(video_id: str) -> tuple[str | None, str | None]:
