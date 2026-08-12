@@ -15,7 +15,7 @@ import re
 import sys
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 # ── Config ──────────────────────────────────────────────────────────────────
 NOTION_API_KEY = os.environ.get("NOTION_API_KEY", "")
@@ -382,14 +382,15 @@ def fetch_oembed(video_id: str) -> dict:
         return {"error": str(e)}
 
 
-def get_today_filter():
-    """Return a created_time filter for today in UTC."""
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+def get_date_filter(target_date: str | None = None):
+    """Return a created_time filter for a specific date (YYYY-MM-DD) or today in UTC."""
+    if target_date is None:
+        target_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     return {
         "property": "Date de création",
         "created_time": {
-            "on_or_after": f"{today}T00:00:00.000Z",
-            "on_or_before": f"{today}T23:59:59.999Z",
+            "on_or_after": f"{target_date}T00:00:00.000Z",
+            "on_or_before": f"{target_date}T23:59:59.999Z",
         }
     }
 
@@ -418,7 +419,9 @@ def main():
     parser.add_argument("--obsidian-vault",
                         help="Path to Obsidian vault to also write transcripts (e.g. /Users/wafer/Obsidian/MyVault)")
     parser.add_argument("--process-today", action="store_true",
-                        help="Full pipeline: query Notion → fetch transcripts → write Notion body → write Obsidian")
+                        help="Full pipeline: query Notion for today → transcript → Notion → Obsidian")
+    parser.add_argument("--yesterday", action="store_true",
+                        help="Use with --process-today to process yesterday instead of today")
     args = parser.parse_args()
 
     # Override global paths
@@ -517,11 +520,14 @@ def main():
             print(json.dumps({"success": False, "page_id": page_id, "title": video_title}))
         return
 
-    # ── Process Today: full automatic pipeline ──────────────────────────
+    # ── Process today/yesterday ─────────────────────────────────────────
     if args.process_today:
-        print("[INFO] Process-today mode: querying Notion...", file=sys.stderr)
+        target_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d") \
+                      if args.yesterday else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        label = "yesterday" if args.yesterday else "today"
+        print(f"[INFO] Process-{label} mode: querying Notion...", file=sys.stderr)
         payload = {
-            "filter": get_today_filter(),
+            "filter": get_date_filter(target_date),
             "sorts": [{"property": "Date de création", "direction": "descending"}],
             "page_size": 50,
         }
@@ -531,7 +537,7 @@ def main():
             sys.exit(1)
 
         pages = result.get("results", [])
-        print(f"[INFO] Found {len(pages)} pages created today", file=sys.stderr)
+        print(f"[INFO] Found {len(pages)} pages created {label}", file=sys.stderr)
 
         vault = os.path.expanduser(args.obsidian_vault) if args.obsidian_vault else None
         processed = 0
@@ -633,7 +639,7 @@ def main():
     # ── Collect mode ────────────────────────────────────────────────────
     print("[INFO] Querying Notion for today's videos...", file=sys.stderr)
     payload = {
-        "filter": get_today_filter(),
+        "filter": get_date_filter(),
         "sorts": [{"property": "Date de création", "direction": "descending"}],
         "page_size": 50,
     }
