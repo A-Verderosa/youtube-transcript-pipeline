@@ -5,7 +5,7 @@
 > **Dernière mise à jour :** 12 août 2026
 
 Ce guide installe de zéro le pipeline de transcription YouTube :  
-**YouTube → Notion + Obsidian (vault AVR2)**  
+**YouTube → Notion + Obsidian (vault OBSIDIAN/REDPILL)**  
 Sans IA, sans LLM, sans token. Un simple cron quotidien.
 
 ---
@@ -301,7 +301,7 @@ python3 cron_youtube_to_facebook.py \
   --process-today \
   --max-videos 5 \
   --node-path /Users/wafer/.local/bin/node \
-  --obsidian-vault "/Users/wafer/Documents/Obsidian/AVR2"
+  --obsidian-vault "/Users/wafer/Documents/Obsidian/OBSIDIAN/REDPILL"
 ```
 
 Le script va :
@@ -309,10 +309,10 @@ Le script va :
 2. Trouver les vidéos créées aujourd'hui sans transcription
 3. Télécharger chaque transcription
 4. L'écrire dans le corps de la page Notion
-5. L'écrire dans le vault Obsidian AVR2
+5. L'écrire dans le vault Obsidian OBSIDIAN/REDPILL
 
 Vérifie dans Obsidian :
-- Ouvre le vault **AVR2**
+- Ouvre le vault **OBSIDIAN/REDPILL**
 - Dossier **YouTube Transcripts/** créé
 - Fichier **YouTube Transcripts.md** (index MOC)
 
@@ -380,7 +380,7 @@ cat /Users/wafer/Hermes_youtube/logs/cron.log
 ### 11.1 — Fichiers créés
 
 ```
-/Users/wafer/Documents/Obsidian/AVR2/
+/Users/wafer/Documents/Obsidian/OBSIDIAN/REDPILL/
 └── YouTube Transcripts/
     ├── YouTube Transcripts.md          ← MOC (Map of Content) — index
     ├── Luis Fonsi - Despacito ft. Daddy Yankee.md
@@ -496,7 +496,7 @@ pip install -U yt-dlp
 | Symlink bgutil | `/Users/wafer/bgutil-ytdlp-pot-provider` → `.../Hermes_youtube/...` |
 | Plist launchd | `~/Library/LaunchAgents/com.wafer.youtube-transcript-pipeline.plist` |
 | Logs cron | `/Users/wafer/Hermes_youtube/logs/` |
-| Obsidian vault | `/Users/wafer/Documents/Obsidian/AVR2/YouTube Transcripts/` |
+| Obsidian vault | `/Users/wafer/Documents/Obsidian/OBSIDIAN/REDPILL/YouTube Transcripts/` |
 
 ## Annexe B — Commandes utiles (copier-coller sans erreurs)
 
@@ -514,7 +514,7 @@ bash setup_verify.sh
 python3 cron_youtube_to_facebook.py --fetch-transcript dQw4w9WgXcQ --node-path /Users/wafer/.local/bin/node
 
 # Pipeline complet aujourd'hui
-python3 cron_youtube_to_facebook.py --process-today --max-videos 5 --node-path /Users/wafer/.local/bin/node --obsidian-vault "/Users/wafer/Documents/Obsidian/AVR2"
+python3 cron_youtube_to_facebook.py --process-today --max-videos 5 --node-path /Users/wafer/.local/bin/node --obsidian-vault "/Users/wafer/Documents/Obsidian/OBSIDIAN/REDPILL"
 
 # Logs
 tail -20 /Users/wafer/Hermes_youtube/logs/cron.log

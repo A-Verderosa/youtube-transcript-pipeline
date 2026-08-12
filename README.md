@@ -143,7 +143,7 @@ python3 cron_youtube_to_facebook.py \
   --process-today \
   --max-videos 5 \
   --node-path /Users/wafer/.local/bin/node \
-  --obsidian-vault "/Users/wafer/Obsidian/VotreVault"
+  --obsidian-vault "/Users/wafer/Documents/Obsidian/OBSIDIAN/REDPILL"
 ```
 
 > ⚙️ Pour connaître ton chemin Node : `which node`
@@ -207,7 +207,7 @@ launchctl unload ~/Library/LaunchAgents/com.wafer.youtube-transcript-pipeline.pl
 
 Les transcriptions sont écrites dans :
 ```
-/Users/wafer/Obsidian/VotreVault/
+/Users/wafer/Documents/Obsidian/OBSIDIAN/REDPILL/
 └── YouTube Transcripts/
     ├── Luis Fonsi - Despacito ft. Daddy Yankee.md
     ├── Rick Astley - Never Gonna Give You Up.md
